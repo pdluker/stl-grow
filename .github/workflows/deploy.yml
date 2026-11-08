@@ -5,6 +5,11 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      skip_migrations:
+        description: "Skip D1 migrations (use only when they were applied out of band)"
+        type: boolean
+        default: false
 
 concurrency:
   group: stl-grow-deploy
@@ -60,6 +65,7 @@ jobs:
           echo "Account ID secret matches a token account."
 
       - name: Apply D1 migrations
+        if: ${{ !inputs.skip_migrations }}
         run: npx wrangler d1 migrations apply grow-db --remote
 
       - name: Deploy
