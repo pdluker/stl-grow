@@ -49,6 +49,15 @@ jobs:
             echo "::error::Repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set (see README, step 3)."
             exit 1
           fi
+          # Does the account-ID secret match an account this token can reach?
+          # (A mismatch surfaces later as a misleading "no permission" 7500.)
+          # GitHub masks secret values in logs, so a match shows as *** below.
+          npx wrangler whoami 2>&1 | tee whoami.txt | grep -vE '^\s*$' | tail -15
+          if ! grep -qF -- "$CLOUDFLARE_ACCOUNT_ID" whoami.txt; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID does not match any account this token can access. Re-set the secret (no spaces or quotes) from Workers & Pages > Overview > Account ID."
+            exit 1
+          fi
+          echo "Account ID secret matches a token account."
 
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply grow-db --remote
