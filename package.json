@@ -1,0 +1,15 @@
+{
+  "name": "stl-grow",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/index.js && node --check src/auth.js && node --check src/periods.js && node --check public/grow/app.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "engines": { "node": ">=22.13" },
+  "devDependencies": {
+    "wrangler": "4.158.0"
+  }
+}

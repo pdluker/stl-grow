@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Grow · stluker.com</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/grow/app.css">
+<script src="/grow/app.js" defer></script>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap bar-in">
+    <a class="brand" href="/grow/">Grow</a>
+    <nav>
+      <a href="#checkin" data-view="checkin">Check-in</a>
+      <a href="#habits" data-view="habits">Habits</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <p id="flash" class="flash" role="status" aria-live="polite" hidden></p>
+
+  <section id="view-checkin" hidden>
+    <div class="top">
+      <div class="monthnav">
+        <button type="button" id="prev" aria-label="Previous month">‹</button>
+        <h1 id="month-label">…</h1>
+        <button type="button" id="next" aria-label="Next month">›</button>
+      </div>
+      <div class="score">
+        <div><div class="big" id="score">—</div><div class="lbl">Month score</div></div>
+        <div class="trend" id="trend" aria-label="Last 6 months"></div>
+      </div>
+    </div>
+    <p class="hint">Tap a pill to cycle: Not yet → Partial → Done → N/A. Weekly habits get one pill per week (dated by Monday). Quarterly habits share one pill for the whole quarter.</p>
+    <div id="areas"></div>
+    <section class="card">
+      <h2 id="reflect-title">Reflection</h2>
+      <label for="win">Biggest win</label>
+      <textarea id="win" maxlength="4000" placeholder="What went right?"></textarea>
+      <label for="miss">Where I slipped / focus for next month</label>
+      <textarea id="miss" maxlength="4000" placeholder="What to fix next?"></textarea>
+      <div class="saved" id="saved"></div>
+    </section>
+  </section>
+
+  <section id="view-habits" hidden>
+    <h1>Habits</h1>
+    <p class="hint">Rewording a habit keeps its history. Cadence can't change after creation: retire the habit and add a new one instead.</p>
+    <div id="habit-list"></div>
+    <form class="card" id="add-form">
+      <h2>Add a habit</h2>
+      <label for="add-text">Habit</label>
+      <input id="add-text" maxlength="200" required placeholder="e.g. Read one technical paper">
+      <div class="row">
+        <div><label for="add-area">Area</label><select id="add-area"></select></div>
+        <div><label for="add-cadence">Cadence</label><select id="add-cadence"></select></div>
+      </div>
+      <button type="submit" class="primary">Add habit</button>
+    </form>
+    <p class="foot"><a href="/grow/api/export" download="grow-export.json">Download a backup (JSON)</a></p>
+  </section>
+</main>
+</body>
+</html>

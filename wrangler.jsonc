@@ -1,0 +1,47 @@
+{
+  // stl-grow: personal improvement tracker at https://stluker.com/grow
+  // Deploys from GitHub Actions on push to master (test -> D1 migrate -> deploy).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stl-grow",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+
+  // Vault §7 rule 6: declare workers_dev explicitly. No *.workers.dev or preview URL.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  // Zone routes, not a custom domain. Routes take precedence over the `stluker`
+  // Worker's custom domain for these exact paths only; the main site is untouched.
+  // Two patterns per host (bare path + subtree) so /growth etc. never match.
+  "routes": [
+    { "pattern": "stluker.com/grow", "zone_name": "stluker.com" },
+    { "pattern": "stluker.com/grow/*", "zone_name": "stluker.com" },
+    { "pattern": "www.stluker.com/grow", "zone_name": "stluker.com" },
+    { "pattern": "www.stluker.com/grow/*", "zone_name": "stluker.com" }
+  ],
+
+  // Every request goes through the Worker first so the auth gate also covers
+  // static files (Vault §7 rule 6: assets shadow the Worker unless this is set).
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "grow-db",
+      "database_id": "919cdb61-9b62-44d3-8186-cbc196bacefc",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "observability": { "enabled": true }
+
+  // Secrets (set once with `npx wrangler secret put <NAME>`; never in this file):
+  //   ACCESS_TEAM_DOMAIN  e.g. <team>.cloudflareaccess.com
+  //   ACCESS_AUD          the Access application's Audience (AUD) tag
+  //   ALLOWED_EMAILS      comma-separated emails allowed in
+  // Missing any of them => every non-public request gets 503 (fails closed).
+}
