@@ -5,9 +5,9 @@ Personal improvement tracker at **https://stluker.com/grow**.
 | | |
 |---|---|
 | Worker | `stl-grow` |
-| Routes | `stluker.com/grow`, `stluker.com/grow/*` (+ the same on `www`, which 301s to the apex) |
+| Routes | `stluker.com/grow`, `stluker.com/grow/*` (+ the same on `www`, which 301s to the apex). **Managed in the dashboard, not in `wrangler.jsonc`** (see the comment there); CI never touches them |
 | D1 | `grow-db`, id `919cdb61-9b62-44d3-8186-cbc196bacefc` (created Nov 8, 2026, ENAM) |
-| Deploy | GitHub Actions on push to `master`: test → `d1 migrations apply --remote` → `wrangler deploy` → smoke test |
+| Deploy | GitHub Actions on push to `master`: test → `d1 migrations apply --remote` (only when `migrations/` changed) → `wrangler deploy` → smoke test (fails if the routes are missing or `/grow/` is open) |
 | Auth | Cloudflare Access (path app on `stluker.com/grow`) **and** the Worker re-verifies the Access JWT (`src/auth.js`), deny by default. Only `/grow/health` is public |
 | Main site | Untouched. Zone routes take precedence over the `stluker` Worker's custom domain for these paths only |
 
@@ -39,8 +39,12 @@ Every step is safe to stop after: until step 5 the Worker answers **503** to eve
 
 **2. CI token.** Cloudflare dashboard → My Profile → API Tokens → Create Token → Custom token:
 - Name: `stl-grow CI`
-- Permissions: Account · **Workers Scripts · Edit**; Account · **D1 · Edit**; Zone · **Workers Routes · Edit**
-- Account resources: Include · your account. Zone resources: Include · Specific zone · `stluker.com`
+- Permissions: Account · **Workers Scripts · Edit**; Account · **D1 · Edit**
+- Account resources: Include · your account
+- Cloudflare's granular Workers roles (Sep 2026): **Editor** can deploy existing Workers but not create them. The first deploy needs **Admin** (product scope); afterwards tighten to **Editor scoped to `stl-grow`**.
+- Known issue (Nov 8, 2026): this user token gets D1 error 7500 on `d1 migrations apply`. 0001/0002 were applied out of band and recorded in `d1_migrations`. Before the next migration, switch to an **account-owned** token (Manage account → Account API tokens) with Workers Editor on `stl-grow` and D1 Edit.
+
+**2b. Routes (once, dashboard).** Workers & Pages → `stl-grow` → Settings → Domains & Routes → Add → Route, zone `stluker.com`, four times: `stluker.com/grow`, `stluker.com/grow/*`, `www.stluker.com/grow`, `www.stluker.com/grow/*`.
 
 **3. Repo secrets** (each command prompts for the value with hidden input; nothing goes in chat or history):
 ```
@@ -50,7 +54,7 @@ gh secret set CLOUDFLARE_ACCOUNT_ID --repo pdluker/stl-grow
 The account ID is on the Workers & Pages overview page (right sidebar).
 
 **4. First deploy.** GitHub → Actions → `test-migrate-deploy` → Run workflow (branch `master`).
-Expected: migrations `0001_init.sql`, `0002_seed.sql` applied; deploy lists the 4 routes; smoke test prints `health=200 app(unauthenticated)=503`.
+Expected: smoke test prints `health=200 app(unauthenticated)=503`.
 
 **5. Access app.** Zero Trust → Access → Applications → Add → Self-hosted:
 - Name: `Grow`

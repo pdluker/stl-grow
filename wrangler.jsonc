@@ -10,15 +10,16 @@
   "workers_dev": false,
   "preview_urls": false,
 
-  // Zone routes, not a custom domain. Routes take precedence over the `stluker`
-  // Worker's custom domain for these exact paths only; the main site is untouched.
-  // Two patterns per host (bare path + subtree) so /growth etc. never match.
-  "routes": [
-    { "pattern": "stluker.com/grow", "zone_name": "stluker.com" },
-    { "pattern": "stluker.com/grow/*", "zone_name": "stluker.com" },
-    { "pattern": "www.stluker.com/grow", "zone_name": "stluker.com" },
-    { "pattern": "www.stluker.com/grow/*", "zone_name": "stluker.com" }
-  ],
+  // ROUTES ARE MANAGED IN THE DASHBOARD, NOT HERE (Nov 8, 2026).
+  // Wrangler attaches routes with PUT /accounts/:id/workers/scripts/stl-grow/routes,
+  // which a user API token under Cloudflare's granular Workers permissions is
+  // refused on; with no `routes` key, `wrangler deploy` never touches routes.
+  // Live routes (Workers & Pages > stl-grow > Settings > Domains & Routes):
+  //   stluker.com/grow        stluker.com/grow/*
+  //   www.stluker.com/grow    www.stluker.com/grow/*
+  // Exact patterns so /growth etc. never match. Zone routes take precedence over
+  // the `stluker` Worker's custom domain for these paths only. The CI smoke test
+  // fails if /grow/health is not served by this Worker.
 
   // Every request goes through the Worker first so the auth gate also covers
   // static files (Vault §7 rule 6: assets shadow the Worker unless this is set).

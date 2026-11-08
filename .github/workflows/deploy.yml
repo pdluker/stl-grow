@@ -42,11 +42,23 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+
+      - name: Did migrations change?
+        id: mig
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            if git diff --quiet "$BEFORE" "${{ github.sha }}" -- migrations; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Preflight
         run: |
@@ -65,15 +77,16 @@ jobs:
           echo "Account ID secret matches a token account."
 
       - name: Apply D1 migrations
-        if: ${{ !inputs.skip_migrations }}
+        if: ${{ steps.mig.outputs.changed == 'true' && !inputs.skip_migrations }}
         run: npx wrangler d1 migrations apply grow-db --remote
 
       - name: Deploy
         run: npx wrangler deploy
 
       - name: Smoke test
-        # Health must be 200, and the app itself must NOT be readable without auth.
-        # A browser-like UA avoids the zone's bot protection (see Vault, stl-sports).
+        # /grow/health must reach this Worker (200, or 302 once Access covers it);
+        # a 404 means the dashboard routes are missing. /grow/ must never be 200
+        # without auth. A browser-like UA avoids the zone's bot protection.
         run: |
           UA="Mozilla/5.0 (stl-grow CI smoke test; +https://stluker.com)"
           sleep 10
@@ -82,5 +95,6 @@ jobs:
           echo "health=$h app(unauthenticated)=$a"
           if [ "$a" = "200" ]; then echo "::error::/grow/ answered 200 without auth"; exit 1; fi
           if [ "$h" != "200" ] && [ "$h" != "302" ]; then
-            echo "::warning::/grow/health returned $h (302 is expected once the Access app covers it)"
+            echo "::error::/grow/health returned $h: the stluker.com/grow routes are probably missing (see wrangler.jsonc)"
+            exit 1
           fi
